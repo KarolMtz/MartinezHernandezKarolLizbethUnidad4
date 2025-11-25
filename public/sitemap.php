@@ -66,9 +66,10 @@ require_once('db_conexion.php');
           <li><a href="pedido.php">Ordenar</a></li>
           <li><a href="contacto.php">Contacto</a></li>
           <li><a href="ayuda.php">Ayuda</a></li>
+          <li><a href="equipo.php">Nuestro equipo</a></li>
         </ul>
       </div>
-      <!-- Puedes agregar más categorías aquí -->
+      
     </div>
   </main>
 
