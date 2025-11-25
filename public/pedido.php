@@ -9,7 +9,7 @@ require_once('db_conexion.php');
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Panadería 1004 - Pedido Personalizado</title>
+  <title>Panadería 1004 - Pedido y Envio Personalizado</title>
   <link href="https://fonts.googleapis.com/css2?family=FONT_NAME:weights&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/custom.css" />
   <link rel="stylesheet" href="css/index.css" />

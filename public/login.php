@@ -3,94 +3,63 @@ ob_start();
 session_start();
 require_once('db_conexion.php');
 
-// Redirect logged-in users away from login page
+// Redirigir si ya está logueado (Esto es una validación, pero la dejamos)
 if (isset($_SESSION['user_logged_in']) && $_SESSION['user_logged_in'] === true) {
     header('Location: index.php');
     exit();
 }
-
-function generateCSRFToken() {
-    if (empty($_SESSION['csrf_token'])) {
-        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-    }
-    return $_SESSION['csrf_token'];
-}
-
-function validateCSRFToken($token) {
-    return isset($_SESSION['csrf_token']) && hash_equals($_SESSION['csrf_token'], $token);
-}
-
 $errors = [];
 
 if (isset($_POST['login'])) {
-    // CSRF token validation
-    if (!validateCSRFToken($_POST['csrf_token'] ?? '')) {
-        $errors[] = "Error de validación del formulario.";
-    }
+    
 
     $email = trim($_POST['email'] ?? '');
     $pssword = $_POST['pssword'] ?? '';
 
-    // Input validation
-    if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        $errors[] = "Correo electrónico inválido.";
-    }
-    if (empty($pssword) || strlen($pssword) < 8) {
-        $errors[] = "La contraseña debe tener al menos 8 caracteres.";
-    }
-    if (!preg_match('/[A-Z]/', $pssword)) {
-        $errors[] = "La contraseña debe contener al menos una letra mayúscula.";
-    }
-    if (!preg_match('/[\W]/', $pssword)) {
-        $errors[] = "La contraseña debe contener al menos un carácter especial.";
-    }
 
-    if (empty($errors)) {
-        $query = $cnnPDO->prepare('SELECT * FROM register WHERE email=:email');
-        $query->bindParam(':email', $email);
-        $query->execute();
-        $campo = $query->fetch();
+    $query = $cnnPDO->prepare('SELECT * FROM register WHERE email=:email');
+    $query->bindParam(':email', $email);
+    $query->execute();
+    $campo = $query->fetch();
 
-        if ($campo && password_verify($pssword, $campo['pssword'])) {
-            // Regenerate session ID to prevent session fixation
-            session_regenerate_id(true);
+    if ($campo && password_verify($pssword, $campo['pssword'])) {
+        // Regenerate session ID to prevent session fixation
+        session_regenerate_id(true);
 
-            // Generate unique session token
-            $sessionToken = bin2hex(random_bytes(32));
+        // Generate unique session token
+        $sessionToken = bin2hex(random_bytes(32));
 
-            // Store session token in database
-            $updateTokenQuery = $cnnPDO->prepare('UPDATE register SET session_token = :sessionToken WHERE id = :userId');
-            $updateTokenQuery->bindParam(':sessionToken', $sessionToken);
-            $updateTokenQuery->bindParam(':userId', $campo['id']);
-            $updateTokenQuery->execute();
+        // Store session token in database
+        $updateTokenQuery = $cnnPDO->prepare('UPDATE register SET session_token = :sessionToken WHERE id = :userId');
+        $updateTokenQuery->bindParam(':sessionToken', $sessionToken);
+        $updateTokenQuery->bindParam(':userId', $campo['id']);
+        $updateTokenQuery->execute();
 
-            $_SESSION['user_logged_in'] = true;
-            $_SESSION['user_id'] = $campo['id'] ?? null;
-            $_SESSION['user_name'] = $campo['name'] ?? '';
-            $_SESSION['user_role'] = $campo['role'] ?? 'usuario'; // default role if not set
-            $_SESSION['session_token'] = $sessionToken;
+        $_SESSION['user_logged_in'] = true;
+        $_SESSION['user_id'] = $campo['id'] ?? null;
+        $_SESSION['user_name'] = $campo['name'] ?? '';
+        $_SESSION['user_role'] = $campo['role'] ?? 'usuario'; // default role if not set
+        $_SESSION['session_token'] = $sessionToken;
 
-            // Role-based redirection
-            switch ($_SESSION['user_role']) {
-                case 'administrador':
-                    header("Location: admin_dashboard.php");
-                    break;
-                case 'editor':
-                    header("Location: editor_dashboard.php");
-                    break;
-                case 'usuario':
-                default:
-                    header("Location: index.php");
-                    break;
-            }
-            exit();
-        } else {
-            $errors[] = "Correo o contraseña incorrectos.";
+        // Role-based redirection
+        switch ($_SESSION['user_role']) {
+            case 'administrador':
+                header("Location: admin_dashboard.php");
+                break;
+            case 'editor':
+                header("Location: editor_dashboard.php");
+                break;
+            case 'usuario':
+            default:
+                header("Location: index.php");
+                break;
         }
+        exit();
+    } else {
+        // Si la autenticación falla, este es el único error posible ahora.
+        $errors[] = "Correo o contraseña incorrectos.";
     }
 }
-
-$csrfToken = generateCSRFToken();
 ?>
 
 <!DOCTYPE html>
@@ -110,7 +79,32 @@ $csrfToken = generateCSRFToken();
 
 <body>
 
-    <?php include 'header.php'; ?>
+          <header>
+    <div class="nav-container container" role="navigation" aria-label="Main navigation">
+      <button aria-label="Abrir menú" aria-expanded="false" aria-controls="mobile-menu"
+        class="hamburger-btn material-icons" id="hamburger-btn">
+        menu
+      </button>
+      <div class="logo" aria-label="1004 Cake Boutique">
+      <a href="index.php"><img src="img/toram.png" alt="" width="70" height="70">
+        1004<span>Cake Boutique</span>
+      </div></a>
+      <nav class="desktop-nav" aria-label="Navegación principal">
+
+      </nav>
+    </div>
+
+    <nav id="mobile-menu" class="mobile-nav" aria-label="Menú móvil">
+      <a href="instore.php" tabindex="-1">In Store</a>
+      <?php if (!isset($_SESSION['user_logged_in']) || $_SESSION['user_logged_in'] !== true): ?>
+        <a href="register.php" tabindex="-1">Register</a>
+        <a href="login.php" tabindex="-1">Login</a>
+      <?php else: ?>
+        <a href="logout.php" tabindex="-1">Logout</a> <!-- Logout link -->
+      <?php endif; ?>
+      <a href="contact.php" tabindex="-1">Contacto</a>
+    </nav>
+  </header>
 
     <div id="main-wrapper" class="container">
         <div class="row justify-content-center">

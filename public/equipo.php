@@ -1,6 +1,5 @@
 <?php
 session_start();
-require_once('db_conexion.php');
 ?>
 
 <!DOCTYPE html>
@@ -104,7 +103,7 @@ require_once('db_conexion.php');
   <main>
     <section class="team-section container" aria-labelledby="team-heading">
       <h1 id="team-heading">Nuestro Equipo</h1>
-      <p>Conoce a las personas que hacen posible la magia en 1004 Cake Boutique.</p>
+      <p>Conoce a las nuestro equipo que hace posible la magia en 1004 Cake Boutique.</p>
       <div class="team-grid">
         <?php for ($i = 1; $i <= 13; $i++): ?>
           <div class="team-card">

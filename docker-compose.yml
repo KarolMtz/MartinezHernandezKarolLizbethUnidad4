@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  db:
+    image: mariadb:10.6
+    container_name: mi-base-de-datos
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: wooahae_96^-^?      
+      MYSQL_DATABASE: 'unidad_uno'
+    volumes:
+      - ./db_data:/var/lib/mysql
+    networks:
+      - app-network
+
+  web1:
+    build: .
+    container_name: cake-boutique-1
+    restart: unless-stopped
+    volumes:
+      - .:/var/www/html/
+    depends_on:
+      - db
+    networks:
+      - app-network
+
+  web2:
+    build: .
+    container_name: cake-boutique-2
+    restart: unless-stopped
+    volumes:
+      - .:/var/www/html/
+    depends_on:
+      - db
+    networks:
+      - app-network
+
+  loadbalancer:
+    image: nginx:alpine
+    container_name: cake-lb
+    ports:
+      - "8081:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - web1
+      - web2
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge

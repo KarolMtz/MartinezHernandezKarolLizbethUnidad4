@@ -1,5 +1,5 @@
 <?php
-require_once 'db_conexion.php';
+require_once('db_conexion.php');
 
 try {
     $sql = "ALTER TABLE register ADD COLUMN role VARCHAR(50) NOT NULL DEFAULT 'usuario'";

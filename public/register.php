@@ -22,6 +22,10 @@ function validateCSRFToken($token) {
 
 $errors = [];
 
+// TUS NUEVAS CLAVES reCAPTCHA v2
+$recaptcha_site_key = "6Le8dhcsAAAAAH7chpkcaB-9hDdRTHzXcKEAR5Bt";
+$recaptcha_secret_key = "6Le8dhcsAAAAADkrUalJKTG20iUUQ1_B90Tk-dT0";
+
 if (isset($_POST['register'])) {
     // CSRF token validation
     if (!validateCSRFToken($_POST['csrf_token'] ?? '')) {
@@ -50,19 +54,19 @@ if (isset($_POST['register'])) {
     if (!preg_match('/[A-Z]/', $pssword)) {
         $errors[] = "La contraseña debe contener al menos una letra mayúscula.";
     }
-    if (!preg_match('/[\W]/', $pssword)) {
+    if (!preg_match('/[^a-zA-Z0-9]/', $pssword)) {
         $errors[] = "La contraseña debe contener al menos un carácter especial.";
     }
 
-    // Verify CAPTCHA
+    // Verify CAPTCHA v2
     if (empty($captcha)) {
-        $errors[] = "Por favor completa el CAPTCHA.";
+        $errors[] = "Por favor verifica que no eres un robot.";
     } else {
-        $secretKey = "6LfCS1wrAAAAAGnmBYIOHMlqJCg8hvKuKdmh7ELp";
-        $response = file_get_contents("https://www.google.com/recaptcha/api/siteverify?secret={$secretKey}&response={$captcha}");
+        $response = file_get_contents("https://www.google.com/recaptcha/api/siteverify?secret={$recaptcha_secret_key}&response={$captcha}");
         $responseKeys = json_decode($response, true);
-        if (!$responseKeys["success"] || $responseKeys["score"] < 0.5) {
-            $errors[] = "Eres un bot o algo salió mal. Por favor, inténtalo de nuevo.";
+        
+        if (!$responseKeys["success"]) {
+            $errors[] = "Error en la verificación reCAPTCHA. Por favor, inténtalo de nuevo.";
         }
     }
 
@@ -76,13 +80,25 @@ if (isset($_POST['register'])) {
         } else {
             // Hash password
             $hashedPassword = password_hash($pssword, PASSWORD_DEFAULT);
+            
+            // Valores para los campos adicionales
+            $recovery_code = '';
+            $recovery_expiration = NULL;
+            $session_token = NULL;
+            $role = 'usuario';
 
             // Insert into database
-            $sql = $cnnPDO->prepare("INSERT INTO register(name, secondname, email, pssword) VALUES (:name, :secondname, :email, :pssword)");
+            $sql = $cnnPDO->prepare("INSERT INTO register (name, secondname, email, pssword, recovery_code, recovery_expiration, session_token, role) 
+                                   VALUES (:name, :secondname, :email, :pssword, :recovery_code, :recovery_expiration, :session_token, :role)");
+            
             $sql->bindParam(':name', $name);
             $sql->bindParam(':secondname', $secondname);
             $sql->bindParam(':email', $email);
             $sql->bindParam(':pssword', $hashedPassword);
+            $sql->bindParam(':recovery_code', $recovery_code);
+            $sql->bindParam(':recovery_expiration', $recovery_expiration);
+            $sql->bindParam(':session_token', $session_token);
+            $sql->bindParam(':role', $role);
 
             if ($sql->execute()) {
                 header("Location: login.php");
@@ -114,7 +130,33 @@ $csrfToken = generateCSRFToken();
 
 <body>
 
-    <?php include 'header.php'; ?>
+      <header>
+    <div class="nav-container container" role="navigation" aria-label="Main navigation">
+      <button aria-label="Abrir menú" aria-expanded="false" aria-controls="mobile-menu"
+        class="hamburger-btn material-icons" id="hamburger-btn">
+        menu
+      </button>
+      <div class="logo" aria-label="1004 Cake Boutique">
+      <a href="index.php"><img src="img/toram.png" alt="" width="70" height="70">
+        1004<span>Cake Boutique</span>
+      </div></a>
+      <nav class="desktop-nav" aria-label="Navegación principal">
+
+      </nav>
+    </div>
+
+    <nav id="mobile-menu" class="mobile-nav" aria-label="Menú móvil">
+      <a href="instore.php" tabindex="-1">In Store</a>
+      <?php if (!isset($_SESSION['user_logged_in']) || $_SESSION['user_logged_in'] !== true): ?>
+        <a href="register.php" tabindex="-1">Register</a>
+        <a href="login.php" tabindex="-1">Login</a>
+      <?php else: ?>
+        <a href="logout.php" tabindex="-1">Logout</a> <!-- Logout link -->
+      <?php endif; ?>
+      <a href="contact.php" tabindex="-1">Contact</a>
+    </nav>
+  </header>
+
 
     <div class="container-fluid py-5 mx-auto">
         <div class="contact-form-container">
@@ -154,7 +196,12 @@ $csrfToken = generateCSRFToken();
                         <input class="form-control" type="password" name="pssword" id="pssword"
                             placeholder="Enter password" required minlength="8">
                     </div>
-                    <input type="hidden" id="recaptchaResponse" name="g-recaptcha-response" value="<?php echo htmlspecialchars($_POST['g-recaptcha-response'] ?? ''); ?>">
+                    
+                    <!-- reCAPTCHA v2 VISIBLE -->
+                    <div class="col-12">
+                        <div class="g-recaptcha" data-sitekey="6Le8dhcsAAAAAH7chpkcaB-9hDdRTHzXcKEAR5Bt"></div>
+                    </div>
+                    
                     <div class="col-12">
                         <button type="submit" name="register" class="btn">Crear Cuenta</button>
                     </div>
@@ -168,14 +215,8 @@ $csrfToken = generateCSRFToken();
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://www.google.com/recaptcha/api.js?render=6LfCS1wrAAAAAJaxXTXlURBrTgH_x8ifhqqSxwID"></script>
-    <script>
-        grecaptcha.ready(function () {
-            grecaptcha.execute('6LfCS1wrAAAAAJaxXTXlURBrTgH_x8ifhqqSxwID', { action: 'register' }).then(function (token) {
-                document.getElementById('recaptchaResponse').value = token;
-            });
-        });
-    </script>
+    <!-- reCAPTCHA v2 -->
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
 </body>
 
 </html>

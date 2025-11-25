@@ -1,21 +1,6 @@
-# Composer dependencies
 /vendor/
-
-# Entornos de desarrollo
+/node_modules/
 .env
-.env.local
-
-# Archivos temporales
+db_data/
 *.log
-*.cache
-
-# Directorios del sistema
 .DS_Store
-Thumbs.db
-
-
-# ---------------------------------------------
-# archivos de conexión y contraseñas
-# ---------------------------------------------
-
-db_conexion.php

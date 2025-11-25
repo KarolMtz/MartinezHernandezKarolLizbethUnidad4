@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once 'db_conexion.php';
+require_once('db_conexion.php');
 
 // Define role constants
 define('ROLE_ADMIN', 'administrador');
