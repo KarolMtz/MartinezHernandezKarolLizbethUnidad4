@@ -59,7 +59,7 @@ require_once('db_conexion.php');
   <main>
     <section class="hero-section">
       <h1>Contacto</h1>
-      <p>Si tienes alguna pregunta, no dudes en contactarnos.</p>
+      <p>Si tienes alguna pregunta, contactanos.</p>
       <div class="contact-form-container">
         <h4>Get in Touch</h4>
         <form method="POST">
